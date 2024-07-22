@@ -1,0 +1,5 @@
+redis
+python-dotenv
+apprise
+azure-communication-sms
+azure-communication-email
