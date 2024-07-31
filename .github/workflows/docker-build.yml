@@ -50,7 +50,7 @@ jobs:
         # If there is a change in a directory with a Dockerfile, build and push the image
         for dir in $dockerfile_dirs; do
           echo "Checking directory: $dir"
-          if echo "$changed_files" | grep -q "^$dir/"; then
+          if echo "$changed_files" | grep -q "$(echo $dir | sed 's/^\.\///')"; then
             safe_dir=$(make_safe "${dir#./}")
             echo "Detected changes in $dir"
             image_name=ghcr.io/${{ github.repository_owner }}/$safe_dir
