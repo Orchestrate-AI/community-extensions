@@ -10,7 +10,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
@@ -32,27 +32,26 @@ jobs:
       run: |
         # Get all directories with Dockerfiles
         dockerfile_dirs=$(find . -name Dockerfile -exec dirname {} \; | sort -u)
+        {
+          echo "Found Dockerfiles in the following directories:"
+          echo "$dockerfile_dirs"
+        } >> $GITHUB_OUTPUT
 
         # Function to convert string to lowercase and URL-safe
         make_safe() {
           echo "$1" | tr '[:upper:]' '[:lower:]' | sed -e 's/[^a-zA-Z0-9.-]/-/g' -e 's/--/-/g' -e 's/-$//'
         }
 
-        # Check each changed file
-        for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
-          dir=$(dirname "$file")
-          
-          # Check if this directory (or any parent directory) contains a Dockerfile
-          while [[ "$dir" != "." && "$dir" != "/" ]]; do
-            if echo "$dockerfile_dirs" | grep -q "^$dir$"; then
-              echo "Changes detected in $dir"
-              # Make the directory name lowercase and URL-safe
-              safe_dir=$(make_safe "${dir#./}")
-              docker build -t ghcr.io/${{ github.repository_owner }}/$safe_dir:latest -t ghcr.io/${{ github.repository_owner }}/$safe_dir:${{ github.sha }} "$dir"
-              docker push ghcr.io/${{ github.repository_owner }}/$safe_dir:latest
-              docker push ghcr.io/${{ github.repository_owner }}/$safe_dir:${{ github.sha }}
-              break
-            fi
-            dir=$(dirname "$dir")
-          done
+        # If there is a change in a directory with a Dockerfile, build and push the image
+        for dir in $dockerfile_dirs; do
+          if [[ $(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep "^$dir/") ]]; then
+            safe_dir=$(make_safe "${dir#./}")
+            echo "Detected changes in $dir" >> $GITHUB_OUTPUT
+            image_name=ghcr.io/${{ github.repository_owner }}/$safe_dir
+            echo "Building and pushing $image_name" >> $GITHUB_OUTPUT
+            docker buildx build --platform linux/amd64,linux/arm64 -t $image_name:latest -t $image_name:${{ github.sha }} $dir
+            docker push $image_name:latest
+            docker push $image_name:${{ github.sha }}
+          fi
         done
+        
