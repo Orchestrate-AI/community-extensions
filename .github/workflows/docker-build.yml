@@ -32,10 +32,15 @@ jobs:
       run: |
         # Get all directories with Dockerfiles
         dockerfile_dirs=$(find . -name Dockerfile -exec dirname {} \; | sort -u)
-        {
-          echo "Found Dockerfiles in the following directories:"
-          echo "$dockerfile_dirs"
-        } >> $GITHUB_OUTPUT
+        
+        # Output the directories to GITHUB_OUTPUT
+        echo "dockerfile_dirs<<EOF" >> $GITHUB_OUTPUT
+        echo "$dockerfile_dirs" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+        # Also echo to console for immediate feedback
+        echo "Found Dockerfiles in the following directories:"
+        echo "$dockerfile_dirs"
 
         # Function to convert string to lowercase and URL-safe
         make_safe() {
