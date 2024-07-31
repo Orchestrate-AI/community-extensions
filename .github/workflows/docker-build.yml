@@ -32,11 +32,6 @@ jobs:
       run: |
         # Get all directories with Dockerfiles
         dockerfile_dirs=$(find . -name Dockerfile -exec dirname {} \; | sort -u)
-        
-        # Output the directories to GITHUB_OUTPUT
-        echo "dockerfile_dirs<<EOF" >> $GITHUB_OUTPUT
-        echo "$dockerfile_dirs" >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
 
         # Also echo to console for immediate feedback
         echo "Found Dockerfiles in the following directories:"
@@ -47,16 +42,24 @@ jobs:
           echo "$1" | tr '[:upper:]' '[:lower:]' | sed -e 's/[^a-zA-Z0-9.-]/-/g' -e 's/--/-/g' -e 's/-$//'
         }
 
+        # Get all changed files
+        changed_files=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+        echo "Changed files:"
+        echo "$changed_files"
+
         # If there is a change in a directory with a Dockerfile, build and push the image
         for dir in $dockerfile_dirs; do
-          if [[ $(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep "^$dir/") ]]; then
+          echo "Checking directory: $dir"
+          if echo "$changed_files" | grep -q "^$dir/"; then
             safe_dir=$(make_safe "${dir#./}")
-            echo "Detected changes in $dir" >> $GITHUB_OUTPUT
+            echo "Detected changes in $dir"
             image_name=ghcr.io/${{ github.repository_owner }}/$safe_dir
-            echo "Building and pushing $image_name" >> $GITHUB_OUTPUT
+            echo "Building and pushing $image_name"
             docker buildx build --platform linux/amd64,linux/arm64 -t $image_name:latest -t $image_name:${{ github.sha }} $dir
             docker push $image_name:latest
             docker push $image_name:${{ github.sha }}
+          else
+            echo "No changes detected in $dir"
           fi
         done
         
