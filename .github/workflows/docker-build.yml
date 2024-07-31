@@ -52,12 +52,11 @@ jobs:
           echo "Checking directory: $dir"
           if echo "$changed_files" | grep -q "$(echo $dir | sed 's/^\.\///')"; then
             safe_dir=$(make_safe "${dir#./}")
+            repo_owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
             echo "Detected changes in $dir"
-            image_name=ghcr.io/${{ github.repository_owner }}/$safe_dir
+            image_name=ghcr.io/$repo_owner/$safe_dir
             echo "Building and pushing $image_name"
-            docker buildx build --platform linux/amd64,linux/arm64 -t $image_name:latest -t $image_name:${{ github.sha }} $dir
-            docker push $image_name:latest
-            docker push $image_name:${{ github.sha }}
+            docker buildx build --platform linux/amd64,linux/arm64 -t $image_name:latest -t $image_name:${{ github.sha }} --push $dir
           else
             echo "No changes detected in $dir"
           fi

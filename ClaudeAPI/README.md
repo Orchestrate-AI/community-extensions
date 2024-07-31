@@ -4,3 +4,5 @@ Claude API is a RESTful API that provides a set of endpoints to interact with th
 ## Inputs
 
 ## Outputs
+
+## Resource Requirements
