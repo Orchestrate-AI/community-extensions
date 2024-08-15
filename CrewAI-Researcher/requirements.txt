@@ -1,0 +1,6 @@
+crewai
+redis
+python-dotenv
+langchain
+openai
+anthropic
