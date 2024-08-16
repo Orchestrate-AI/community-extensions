@@ -17,8 +17,8 @@ REDIS_CHANNEL_IN = os.getenv('REDIS_CHANNEL_IN')
 REDIS_CHANNEL_OUT = os.getenv('REDIS_CHANNEL_OUT')
 REDIS_CHANNEL_READY = os.getenv('REDIS_CHANNEL_READY')
 
-redis_client = redis.Redis(
-    host=REDIS_HOST_URL,
+redis_client = redis.Redis.from_url(
+    url=REDIS_HOST_URL,
     username=REDIS_USERNAME,
     password=REDIS_PASSWORD,
     decode_responses=True
