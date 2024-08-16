@@ -1,4 +1,5 @@
 import os
+import sys
 import logging
 from dotenv import load_dotenv
 import redis
@@ -117,7 +118,7 @@ def process_message(message):
 
     return {
         "topic": topic,
-        "research_report": result,
+        "research_report": str(result),  # Convert CrewOutput to string
         "models_used": {
             "researcher": researcher_model,
             "writer": writer_model
