@@ -7,8 +7,12 @@ from crewai import Agent, Task, Crew, Process
 from langchain_community.chat_models import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
 
-# Set up logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+# Set up logging to output to stdout
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
 logger = logging.getLogger(__name__)
 
 load_dotenv()
@@ -158,4 +162,6 @@ def main():
                 break
 
 if __name__ == "__main__":
+    logger.info("Script started")
     main()
+    logger.info("Script finished")

@@ -13,5 +13,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application code into the container
 COPY main.py .
 
+# Set environment variable to ensure Python output is sent straight to terminal without buffering
+ENV PYTHONUNBUFFERED=1
+
 # Set the command to run the script when the container starts
 CMD ["python", "main.py"]
