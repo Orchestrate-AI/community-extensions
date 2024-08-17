@@ -47,12 +47,14 @@ def process_message(message):
     logger.info("Processing incoming message")
     inputs = json.loads(message)['inputs']
     topic = inputs.get('topic')
+    context = inputs.get('context')
     openai_api_key = inputs.get('openai_api_key')
     anthropic_api_key = inputs.get('anthropic_api_key')
     researcher_model = inputs.get('researcher_model', 'gpt-4')
     writer_model = inputs.get('writer_model', 'gpt-4')
 
     logger.debug(f"Received topic: {topic}")
+    logger.debug(f"Received context: {context[:100]}...")  # Log first 100 chars of context
     logger.debug(f"Researcher model: {researcher_model}")
     logger.debug(f"Writer model: {writer_model}")
 
@@ -70,8 +72,8 @@ def process_message(message):
     logger.debug("Creating Researcher agent")
     researcher = Agent(
         role="Researcher",
-        goal="Conduct thorough research on the given topic",
-        backstory="You are an expert researcher with a keen eye for detail and the ability to find reliable information quickly.",
+        goal="Conduct thorough research on the given topic, incorporating any provided context",
+        backstory="You are an expert researcher with a keen eye for detail and the ability to find and synthesize information quickly.",
         llm=researcher_llm,
     )
     logger.debug("Researcher agent created successfully")
@@ -79,26 +81,30 @@ def process_message(message):
     logger.debug("Creating Writer agent")
     writer = Agent(
         role="Writer",
-        goal="Synthesize research findings into a comprehensive report",
+        goal="Synthesize research findings into a comprehensive report, incorporating any provided context",
         backstory="You are a skilled writer with the ability to organize information clearly and present it in an engaging manner.",
         llm=writer_llm,
     )
     logger.debug("Writer agent created successfully")
 
+    research_task_description = f"Research the topic: {topic}. Gather key information, important facts, and relevant data."
+    if context:
+        research_task_description += f" Use the following context as a starting point or additional resource: {context}"
+
     logger.debug("Creating research task")
     research_task = Task(
-        description=f"Research the topic: {topic}. Gather key information, important facts, and relevant data.",
+        description=research_task_description,
         agent=researcher,
-        expected_output="A comprehensive collection of research findings on the given topic."
+        expected_output="A comprehensive collection of research findings on the given topic, incorporating any provided context."
     )
     logger.debug("Research task created successfully")
     logger.debug(f"Research task details: {research_task}")
 
     logger.debug("Creating writing task")
     writing_task = Task(
-        description="Write a comprehensive research report based on the findings. Include an introduction, main points, and a conclusion.",
+        description="Write a comprehensive research report based on the findings. Include an introduction, main points, and a conclusion. Incorporate any provided context when relevant.",
         agent=writer,
-        expected_output="A well-structured research report synthesizing the gathered information."
+        expected_output="A well-structured research report synthesizing the gathered information and context."
     )
     logger.debug("Writing task created successfully")
     logger.debug(f"Writing task details: {writing_task}")
@@ -118,6 +124,7 @@ def process_message(message):
 
     return {
         "topic": topic,
+        "context_provided": bool(context),
         "research_report": str(result),  # Convert CrewOutput to string
         "models_used": {
             "researcher": researcher_model,
