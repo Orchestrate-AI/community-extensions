@@ -103,7 +103,6 @@ Extensions in this repository are automatically built and deployed using a GitHu
    - Tags the image with `latest` and the current commit SHA.
    - Pushes the image to the GitHub Container Registry (ghcr.io).
 
-The workflow supports both AMD64 and ARM64 architectures.
 
 To use an extension in your workflow:
 
