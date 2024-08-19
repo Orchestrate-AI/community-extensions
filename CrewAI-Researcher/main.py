@@ -54,7 +54,10 @@ def process_message(message):
     writer_model = inputs.get('writer_model', 'gpt-4')
 
     logger.debug(f"Received topic: {topic}")
-    logger.debug(f"Received context: {context[:min(100, len(context))]}")  # Log first 100 chars of context
+    if context:
+        logger.debug(f"Received context: {str(context)[:100]}")  # Convert to string and log first 100 chars
+    else:
+        logger.debug("No context provided")
     logger.debug(f"Researcher model: {researcher_model}")
     logger.debug(f"Writer model: {writer_model}")
 
