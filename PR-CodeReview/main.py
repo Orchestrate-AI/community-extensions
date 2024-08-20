@@ -33,18 +33,29 @@ redis_client = redis.Redis.from_url(
 def process_message(message):
     logger.info("Processing incoming message")
     inputs = json.loads(message)['inputs']
-    pull_request_url = inputs.get('pull_request_url')
+    pull_request_hook_body = inputs.get('pull_request_hook_body')
     openai_api_key = inputs.get('openai_api_key')
     anthropic_api_key = inputs.get('anthropic_api_key')
     model = inputs.get('model', 'gpt-4')
     github_token = inputs.get('github_token')
 
-    if not pull_request_url:
-        raise ValueError("'pull_request_url' is required in the input")
+    if not pull_request_hook_body:
+        raise ValueError("'pull_request_hook_body' is required in the input")
     if not openai_api_key and not anthropic_api_key:
         raise ValueError("Either 'openai_api_key' or 'anthropic_api_key' is required in the input")
 
-    diff_url = f"{pull_request_url}.diff"
+    pr_data = json.loads(pull_request_hook_body)
+    pull_request_url = pr_data['pull_request']['html_url']
+    
+    if pr_data['action'] != 'opened':
+        logger.info("Pull request action is not 'opened'. Skipping review.")
+        return {
+            "pull_request_url": pull_request_url,
+            "review": "",
+            "model_used": None
+        }
+
+    diff_url = pr_data['pull_request']['diff_url']
     diff_content = fetch_diff(diff_url, github_token)
     review = generate_review(diff_content, model, openai_api_key, anthropic_api_key)
 
