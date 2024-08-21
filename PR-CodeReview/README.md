@@ -7,7 +7,7 @@ This extension leverages AI models to perform automated code reviews on newly op
 The extension accepts the following inputs:
 
 1. `pull_request_hook_body` (required):
-   - Type: string
+   - Type: string or dict
    - Description: The JSON body of the GitHub webhook payload when a pull request is opened
 
 2. `openai_api_key` (optional):

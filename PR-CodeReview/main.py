@@ -44,7 +44,14 @@ def process_message(message):
     if not openai_api_key and not anthropic_api_key:
         raise ValueError("Either 'openai_api_key' or 'anthropic_api_key' is required in the input")
 
-    pr_data = json.loads(pull_request_hook_body)
+    # Handle both string and dict for pull_request_hook_body
+    if isinstance(pull_request_hook_body, str):
+        pr_data = json.loads(pull_request_hook_body)
+    elif isinstance(pull_request_hook_body, dict):
+        pr_data = pull_request_hook_body
+    else:
+        raise ValueError("'pull_request_hook_body' must be either a JSON string or a dictionary")
+
     pull_request_url = pr_data['pull_request']['html_url']
     
     if pr_data['action'] != 'opened':
