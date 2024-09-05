@@ -81,6 +81,7 @@ When creating or modifying an extension, please adhere to these guidelines:
 6. Always return a JSON-serializable object from your message processing function.
 7. Include a Dockerfile for containerization.
 8. Follow best practices and idiomatic conventions for the language you're using.
+9. Remeber that the environment variables passed into the extension by the workflow engine cannot be modified during runtime. These variables are set when the extension's container is created and remain constant throughout its lifecycle.
 
 ## Testing
 
