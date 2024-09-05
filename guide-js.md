@@ -161,6 +161,32 @@ COPY . .
 CMD [ "node", "index.js" ]
 ```
 
+4. Environment Variables and Inputs:
+
+   It's important to note that environment variables passed into the extension by the workflow engine cannot be modified during runtime. These variables are set when the extension's container is created and remain constant throughout its lifecycle.
+
+   If your extension needs to work with variable data that might change between different workflow runs, you should define these as inputs in your extension configuration. This allows users to provide different values each time the workflow is executed.
+
+   For example, instead of trying to modify an environment variable like this:
+
+   ```javascript
+   // This won't work and should be avoided
+   process.env.SOME_VARIABLE = 'new value';
+   ```
+
+   Define an input in your extension configuration and access it in the `inputs` object:
+
+   ```javascript
+   async function processMessage(message) {
+     const { inputs } = JSON.parse(message);
+     const someVariable = inputs.someVariable;
+     
+     // Use someVariable in your logic
+   }
+   ```
+
+   Remember to document any required inputs in your extension's description or README file.
+
 ## Building and Testing
 
 1. Build your Docker image:
