@@ -50,3 +50,15 @@ The extension provides the following outputs:
 ## Usage Example
 
 Here's an example of how to use the Currency Exchange Extension:
+
+## Resource Requirements
+
+This extension has minimal resource requirements:
+
+- CPU: 0.1 vCPU (1/10th of a CPU core) should be sufficient for most use cases
+  - This is adequate for handling API requests and basic data processing
+  - For high-volume scenarios, consider increasing to 0.25 vCPU
+
+- Memory: 128MB RAM should be adequate
+  - This covers the memory needs for running the Python interpreter, loading necessary libraries, and processing API responses
+  - If handling large volumes of concurrent requests, consider increasing to 256MB RAM
