@@ -19,7 +19,6 @@ This extension retrieves comments from a specified YouTube video using the Googl
    - Default: false
    - Note: Accepts boolean true/false or string "true"/"True" (case-insensitive)
 
-
 4. `max_comments` (optional):
    - Type: number
    - Description: The maximum number of comments to fetch
@@ -70,6 +69,17 @@ The extension is implemented in Python and uses the following main libraries:
 - `google-api-python-client` for interacting with the YouTube API
 - `redis` for communication within the OrchestrateAI workflow system
 
+### API Scope
+
+This extension requires the following YouTube API scope:
+
+```
+https://www.googleapis.com/auth/youtube.force-ssl
+```
+
+This scope is necessary for accessing the `commentThreads` endpoint, even for read-only operations. If you're using OAuth authentication, ensure that your OAuth 2.0 credentials in the Google Developer Console have this scope enabled, and that your application requests this scope during the OAuth flow when obtaining the access token.
+
+If you're using an API key (when `is_oauth` is false), you don't need to specify a scope. API keys have their own set of quotas and limitations defined in the Google Developer Console.
 
 ## Error Handling
 
@@ -91,6 +101,70 @@ The extension implements error handling for common issues:
 - Each API call can fetch a maximum of 100 comments, so requesting more than 100 comments will result in multiple API calls.
 - Fetching a very large number of comments may take a considerable amount of time and could potentially hit API quotas.
 
+## Extension Configuration
+
+You can use the following YAML configuration to create this extension in your application:
+
+```yaml
+name: YouTube Comments Fetcher
+description: Fetches comments from a specified YouTube video using the Google API
+extensionType: container
+visibility: private
+configuration:
+  dockerImage: ghcr.io/orchestrate-ai/youtube-commentsfetcher
+  dockerTag: latest
+  cpuRequest: "0.1"
+  memoryRequest: "128Mi"
+  inputs:
+    - id: video-id
+      name: Video ID
+      description: The ID of the YouTube video to fetch comments from
+      key: video_id
+      type: string
+      required: true
+    - id: auth-token
+      name: Auth Token
+      description: Your Google API key or OAuth token for authentication
+      key: auth_token
+      type: string
+      required: true
+    - id: is-oauth
+      name: Is OAuth
+      description: Set to true if using an OAuth token instead of an API key
+      key: is_oauth
+      type: boolean
+      required: false
+    - id: max-comments
+      name: Max Comments
+      description: The maximum number of comments to fetch (default is 100)
+      key: max_comments
+      type: number
+      required: false
+  outputs:
+    - id: comments
+      name: Comments
+      description: An array containing the fetched comments from the specified video
+      key: comments
+      type: string
+    - id: video-id
+      name: Video ID
+      description: The ID of the video that was processed (echoed from input)
+      key: video_id
+      type: string
+    - id: total-results
+      name: Total Results
+      description: The total number of comments fetched
+      key: total_results
+      type: number
+```
+
+To use this configuration:
+
+1. Copy the YAML content above.
+2. In your application's YAML/JSON editor, paste the configuration.
+3. Adjust any fields as necessary to match your specific requirements.
+
+This configuration sets up the extension with the correct inputs and outputs, resource requests, and other necessary metadata. The `visibility` is set to `private`, but you can change this to `public` if you want the extension to be publicly available.
 
 ## Customization
 
@@ -107,36 +181,8 @@ If you encounter issues:
 2. Check if you've exceeded your API quota for the day.
 3. Verify that the video ID is correct and the video is publicly accessible.
 4. Check the extension logs for any error messages or warnings.
+5. If using OAuth, ensure that your token includes the required `youtube.force-ssl` scope. Which is full access to youtube.
 
 ## Updates and Maintenance
 
-This extension is maintained by the community. For bug reports, feature requests, or contributions, please open an issue or pull request in the GitHub repository.
-
-## Usage Examples
-
-Here's an example of how to use the YouTube Comments Fetcher Extension with an API key:
-
-```yaml
-extensions:
-  - name: youtube-comments-fetcher
-    image: ghcr.io/your-org/youtube-comments-fetcher:latest
-    inputs:
-      video_id: "dQw4w9WgXcQ"
-      auth_token: "YOUR_GOOGLE_API_KEY"
-      max_comments: 50
-```
-
-And here's an example using an OAuth token:
-
-```yaml
-extensions:
-  - name: youtube-comments-fetcher
-    image: ghcr.io/your-org/youtube-comments-fetcher:latest
-    inputs:
-      video_id: "dQw4w9WgXcQ"
-      auth_token: "YOUR_OAUTH_TOKEN"
-      is_oauth: true
-      max_comments: 50
-```
-
-Make sure to replace "YOUR_GOOGLE_API_KEY" or "YOUR_OAUTH_TOKEN" with your actual authentication credentials.
+This extension is maintained by the OrchestrateAI team. For bug reports, feature requests, or contributions, please open an issue or pull request in the GitHub repository.
