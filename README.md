@@ -75,13 +75,12 @@ When creating or modifying an extension, please adhere to these guidelines:
    - Build and run instructions
    - Usage examples
    - Any configuration options
-3. Use environment variables for configuration.
-4. Implement proper error handling and logging.
-5. Ensure your extension is stateless or uses external storage for state.
-6. Always return a JSON-serializable object from your message processing function.
-7. Include a Dockerfile for containerization.
-8. Follow best practices and idiomatic conventions for the language you're using.
-9. Remeber that the environment variables passed into the extension by the workflow engine cannot be modified during runtime. These variables are set when the extension's container is created and remain constant throughout its lifecycle.
+3. Implement proper error handling and logging.
+4. Ensure your extension is stateless or uses external storage for state.
+5. Always return a JSON-serializable object from your message processing function.
+6. Include a Dockerfile for containerization.
+7. Follow best practices and idiomatic conventions for the language you're using.
+8. Remeber that the environment variables passed into the extension by the workflow engine cannot be modified during runtime. These variables are set when the extension's container is created and remain constant throughout its lifecycle.
 
 ## Testing
 
@@ -113,9 +112,13 @@ To use an extension in your workflow:
 
 For example:
 ```yaml
-extensions:
-  - name: my-extension
-    image: ghcr.io/your-org/my-extension:latest
+name: <extension-name>
+description: <extension-description>
+extensionType: container
+visibility: private
+configuration:
+  dockerImage: ghcr.io/orchestrate-ai/<extension-name>
+  dockerTag: latest
 ```
 
 Note: Ensure your workflow system has the necessary permissions to pull images from the GitHub Container Registry.
