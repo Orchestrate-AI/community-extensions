@@ -55,4 +55,8 @@ sequenceDiagram
 
 7. **Workflow Continuation**: The Workflow Engine continues with the next steps in the workflow.
 
+Note: Throughout this process, it's important to remember that environment variables provided to the extension cannot be modified at runtime. They are set when the extension pod is created and remain constant for the duration of the extension's execution.
+
+It is crucial that all extensions strictly adhere to this communication flow. Deviating from this sequence can lead to unexpected behavior and errors in the workflow execution. When developing your extension, ensure that you implement each step of this process in the correct order.
+
 This diagram provides a clear visual representation of how an extension communicates with Redis and fits into the overall workflow process.

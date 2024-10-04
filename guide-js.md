@@ -1,5 +1,7 @@
 # Workflow Extension Development Guide (JavaScript)
 
+Note: While this guide uses JavaScript, you can develop extensions in any programming language that suits your needs. The principles outlined here apply to all languages, but implementation details may vary. Choose the language that best fits your extension's requirements and your team's expertise.
+
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Requirements](#requirements)
@@ -7,10 +9,11 @@
 4. [Extension Structure](#extension-structure)
 5. [Message Schema](#message-schema)
 6. [Developing Your Extension](#developing-your-extension)
-7. [Building and Testing](#building-and-testing)
-8. [Deployment](#deployment)
-9. [Best Practices](#best-practices)
-10. [Troubleshooting](#troubleshooting)
+7. [Environment Variables and Inputs](#environment-variables-and-inputs)
+8. [Building and Testing](#building-and-testing)
+9. [Deployment](#deployment)
+10. [Best Practices](#best-practices)
+11. [Troubleshooting](#troubleshooting)
 
 ## Introduction
 
@@ -161,31 +164,33 @@ COPY . .
 CMD [ "node", "index.js" ]
 ```
 
-4. Environment Variables and Inputs:
+## Environment Variables and Inputs
 
-   It's important to note that environment variables passed into the extension by the workflow engine cannot be modified during runtime. These variables are set when the extension's container is created and remain constant throughout its lifecycle.
+It's crucial to understand how environment variables and inputs work in the extension system:
 
-   If your extension needs to work with variable data that might change between different workflow runs, you should define these as inputs in your extension configuration. This allows users to provide different values each time the workflow is executed.
+1. **Environment Variables**: 
+   - These are set by the workflow engine when creating the extension's container.
+   - They cannot be modified during runtime.
+   - Use these for configuration that should remain constant throughout the extension's lifecycle.
 
-   For example, instead of trying to modify an environment variable like this:
+2. **Inputs**:
+   - These are provided in the message received on REDIS_CHANNEL_IN.
+   - Use inputs for values that may change between different executions of the workflow.
 
-   ```javascript
-   // This won't work and should be avoided
-   process.env.SOME_VARIABLE = 'new value';
-   ```
+Example of using environment variables (constant) and inputs (variable):
 
-   Define an input in your extension configuration and access it in the `inputs` object:
+```javascript
+const { WORKFLOW_INSTANCE_ID } = process.env; // Environment variable, constant
 
-   ```javascript
-   async function processMessage(message) {
-     const { inputs } = JSON.parse(message);
-     const someVariable = inputs.someVariable;
-     
-     // Use someVariable in your logic
-   }
-   ```
+async function processMessage(message) {
+  const { inputs } = JSON.parse(message);
+  const someVariable = inputs.someVariable; // Input, can vary between executions
+  
+  // Use WORKFLOW_INSTANCE_ID and someVariable in your logic
+}
+```
 
-   Remember to document any required inputs in your extension's description or README file.
+Remember to document any required inputs in your extension's description or README file.
 
 ## Building and Testing
 
@@ -237,3 +242,25 @@ CMD [ "node", "index.js" ]
 - Check the logs of your extension's pod for any error messages or unexpected behavior.
 
 Remember, the workflow engine provides all necessary environment variables when creating the pod for your extension. Your extension should be designed to read these variables and use them for Redis communication.
+
+## Communication Flow
+
+It's crucial to follow the correct communication flow when developing your extension. This ensures proper interaction with the workflow engine and Redis. Here's a summary of the expected flow:
+
+1. **Initialization**: 
+   - Connect to Redis
+   - Subscribe to REDIS_CHANNEL_IN (**Really important that we subscribe to this channel before publishing to REDIS_CHANNEL_READY to avoid race conditions**)
+   - Publish an empty message to REDIS_CHANNEL_READY
+
+2. **Input Processing**:
+   - Receive input message from REDIS_CHANNEL_IN
+   - Process the input
+
+3. **Output Communication**:
+   - Publish the result to REDIS_CHANNEL_OUT
+
+4. **Cleanup**:
+   - Unsubscribe from REDIS_CHANNEL_IN
+   - Disconnect from Redis
+
+Adhering to this flow is essential for your extension to work correctly within the workflow system. For a detailed visual representation of this flow, refer to the sequence diagram in the extension-communication.md file.

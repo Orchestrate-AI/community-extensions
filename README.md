@@ -80,7 +80,19 @@ When creating or modifying an extension, please adhere to these guidelines:
 5. Always return a JSON-serializable object from your message processing function.
 6. Include a Dockerfile for containerization.
 7. Follow best practices and idiomatic conventions for the language you're using.
-8. Remeber that the environment variables passed into the extension by the workflow engine cannot be modified during runtime. These variables are set when the extension's container is created and remain constant throughout its lifecycle.
+8. Choose the most appropriate language for your extension. While we provide a JavaScript guide, you can use any language that best suits your extension's requirements and your expertise.
+9. The following environment variables will be provided by the workflow engine and should be used for Redis communication:
+   - WORKFLOW_INSTANCE_ID
+   - WORKFLOW_EXTENSION_ID
+   - REDIS_HOST_URL
+   - REDIS_USERNAME
+   - REDIS_PASSWORD
+   - REDIS_CHANNEL_IN
+   - REDIS_CHANNEL_OUT
+   - REDIS_CHANNEL_READY
+   These variables are set when the extension's container is created and remain constant throughout its lifecycle. They cannot be modified during runtime.
+10. Any additional configuration or sensitive information (like API tokens) should be passed as part of the input message received on REDIS_CHANNEL_IN, not as environment variables.
+11. Strictly follow the communication flow outlined in the extension-communication.md file. This flow is crucial for proper interaction with the workflow engine and Redis.
 
 ## Testing
 
@@ -113,7 +125,7 @@ To use an extension in your workflow:
 For example:
 ```yaml
 name: <extension-name>
-description: <extension-description>
+description: <description>
 extensionType: container
 visibility: private
 configuration:
