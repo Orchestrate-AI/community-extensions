@@ -1,0 +1,14 @@
+{
+  "name": "mailchimp-addsubscriber",
+  "version": "1.0.0",
+  "description": "MailChimp extension to add a new subscriber",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "dotenv": "^10.0.0",
+    "redis": "^4.0.0",
+    "@mailchimp/mailchimp_marketing": "^3.0.0"
+  }
+}
