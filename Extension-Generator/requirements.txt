@@ -1,0 +1,9 @@
+redis
+crewai
+langchain
+langchain-openai
+langchain-anthropic
+anthropic
+GitPython
+PyGithub
+crewai_tools

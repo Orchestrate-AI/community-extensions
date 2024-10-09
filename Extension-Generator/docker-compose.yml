@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  extension-generator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      WORKFLOW_INSTANCE_ID: test-instance
+      WORKFLOW_EXTENSION_ID: test-extension
+      REDIS_HOST_URL: redis
+      REDIS_USERNAME: default
+      REDIS_PASSWORD: redispassword
+      REDIS_CHANNEL_IN: extension_in
+      REDIS_CHANNEL_OUT: extension_out
+      REDIS_CHANNEL_READY: extension_ready
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+      GITHUB_APP_ID: ${GITHUB_APP_ID}
+      GITHUB_PRIVATE_KEY: ${GITHUB_PRIVATE_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      SERPER_API_KEY: ${SERPER_API_KEY}
+    command: python e2e_test.py
