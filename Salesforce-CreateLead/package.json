@@ -1,0 +1,26 @@
+{
+  "name": "salesforce-create-lead",
+  "version": "1.0.0",
+  "description": "Salesforce extension to create a new lead in the CRM",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "jest"
+  },
+  "engines": {
+    "node": "20.18.0"
+  },
+  "dependencies": {
+    "jsforce": "^3.5.1",
+    "redis": "^4.6.7"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22",
+    "jest": "^29.5.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/salesforce-create-lead.git"
+  }
+}
