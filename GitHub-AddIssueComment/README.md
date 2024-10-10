@@ -24,9 +24,6 @@ The extension requires the following environment variables:
 - REDIS_CHANNEL_IN
 - REDIS_CHANNEL_OUT
 - REDIS_CHANNEL_READY
-- GITHUB_APP_ID
-- GITHUB_PRIVATE_KEY
-- GITHUB_INSTALLATION_ID
 
 These are provided by the workflow engine when the extension is executed.
 
@@ -39,7 +36,10 @@ The extension expects the following inputs in the message received on REDIS_CHAN
   "inputs": {
     "repo_name": "owner/repo",
     "issue_number": "123",
-    "comment": "This is the comment to be added to the issue"
+    "comment": "This is the comment to be added to the issue",
+    "github_app_id": "12345",
+    "github_private_key": "-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----",
+    "github_installation_id": "67890"
   }
 }
 ```
@@ -87,7 +87,7 @@ The extension is designed to be run as part of a larger workflow system. The wor
 
 ## Security Considerations
 
-- The GitHub App's private key is sensitive information. Ensure it's securely passed to the extension and not logged or exposed.
+- The GitHub App's private key is sensitive information. Ensure it's securely passed to the extension as part of the input message and not logged or exposed.
 - The extension uses JWT for authentication with GitHub, which is a secure method for GitHub App authentication.
 
 ## Error Handling
@@ -127,6 +127,24 @@ configuration:
       name: Comment
       description: The comment to be added to the issue
       key: comment
+      type: string
+      required: true
+    - id: github-app-id
+      name: GitHub App ID
+      description: The ID of the GitHub App
+      key: github_app_id
+      type: string
+      required: true
+    - id: github-private-key
+      name: GitHub Private Key
+      description: The private key of the GitHub App
+      key: github_private_key
+      type: string
+      required: true
+    - id: github-installation-id
+      name: GitHub Installation ID
+      description: The installation ID of the GitHub App
+      key: github_installation_id
       type: string
       required: true
   outputs:

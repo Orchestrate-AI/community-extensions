@@ -9,11 +9,6 @@ import logging
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# GitHub App configuration
-GITHUB_APP_ID = os.environ['GITHUB_APP_ID']
-GITHUB_PRIVATE_KEY = os.environ['GITHUB_PRIVATE_KEY']
-GITHUB_INSTALLATION_ID = os.environ['GITHUB_INSTALLATION_ID']
-
 # Redis configuration
 REDIS_HOST_URL = os.environ['REDIS_HOST_URL']
 REDIS_USERNAME = os.environ['REDIS_USERNAME']
@@ -22,9 +17,9 @@ REDIS_CHANNEL_IN = os.environ['REDIS_CHANNEL_IN']
 REDIS_CHANNEL_OUT = os.environ['REDIS_CHANNEL_OUT']
 REDIS_CHANNEL_READY = os.environ['REDIS_CHANNEL_READY']
 
-def add_issue_comment(repo_name, issue_number, comment_body):
-    integration = GithubIntegration(GITHUB_APP_ID, GITHUB_PRIVATE_KEY)
-    github_connection = integration.get_github_for_installation(GITHUB_INSTALLATION_ID)
+def add_issue_comment(repo_name, issue_number, comment_body, github_app_id, github_private_key, github_installation_id):
+    integration = GithubIntegration(github_app_id, github_private_key)
+    github_connection = integration.get_github_for_installation(github_installation_id)
     
     try:
         repo = github_connection.get_repo(repo_name)
@@ -51,13 +46,16 @@ def process_message(message):
         repo_name = inputs.get('repo_name')
         issue_number = inputs.get('issue_number')
         comment_body = inputs.get('comment')
+        github_app_id = inputs.get('github_app_id')
+        github_private_key = inputs.get('github_private_key')
+        github_installation_id = inputs.get('github_installation_id')
 
-        if not all([repo_name, issue_number, comment_body]):
+        if not all([repo_name, issue_number, comment_body, github_app_id, github_private_key, github_installation_id]):
             raise ValueError("Missing required parameters")
 
         issue_number = int(issue_number)  # Ensure issue_number is an integer
         
-        return add_issue_comment(repo_name, issue_number, comment_body)
+        return add_issue_comment(repo_name, issue_number, comment_body, github_app_id, github_private_key, github_installation_id)
     except Exception as e:
         logging.error(f"Error processing message: {str(e)}")
         return {
