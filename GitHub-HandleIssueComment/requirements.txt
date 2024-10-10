@@ -1,0 +1,2 @@
+redis==4.3.4
+PyGithub==1.55
