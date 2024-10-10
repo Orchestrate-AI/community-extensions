@@ -41,14 +41,6 @@ missing_env_vars = [var for var in required_env_vars if not os.getenv(var)]
 if missing_env_vars:
     raise ValueError(f"Missing required environment variables: {', '.join(missing_env_vars)}")
 
-# Initialize Redis client
-async def get_redis_client():
-    return Redis.from_url(
-        REDIS_HOST_URL,
-        username=REDIS_USERNAME,
-        password=REDIS_PASSWORD
-    )
-
 def clone_repo_and_set_guideline():
     # Clone the community-extensions repository
     repo_url = "https://github.com/Orchestrate-AI/community-extensions.git"
@@ -373,46 +365,43 @@ def run_extension(input_data):
         }
 
 async def main():
-    try:
-        redis = await get_redis_client()
+    redis = Redis.from_url(
+        REDIS_HOST_URL,
+        username=REDIS_USERNAME,
+        password=REDIS_PASSWORD
+    )
 
-        # Publish ready message
-        await redis.publish(REDIS_CHANNEL_READY, '')
-        
-        
-        
-        # Subscribe to input channel
-        pubsub = redis.pubsub()
-        await pubsub.subscribe(REDIS_CHANNEL_IN)
-        
-        async for message in pubsub.listen():
-            if message['type'] == 'message':
+    await redis.publish(REDIS_CHANNEL_READY, '')
+
+    pubsub = redis.pubsub()
+    await pubsub.subscribe(REDIS_CHANNEL_IN)
+
+    async for message in pubsub.listen():
+        if message['type'] == 'message':
+            try:
                 # Clone repo and set guideline after sending ready message
                 guideline = clone_repo_and_set_guideline()
                 result = await process_message(message['data'], guideline)
-                
                 output = {
-                    'type': 'completed' if result['status'] == 'success' else 'failed',
-                    'workflowInstanceId': WORKFLOW_INSTANCE_ID,
-                    'workflowExtensionId': WORKFLOW_EXTENSION_ID,
-                    'output': result
+                    "type": "completed",
+                    "workflowInstanceId": WORKFLOW_INSTANCE_ID,
+                    "workflowExtensionId": WORKFLOW_EXTENSION_ID,
+                    "output": result
                 }
-                
-                # Add the comment to the output
-                if result['status'] == 'success':
-                    output['output']['comment'] = result['result']['comment']
-                
-                await redis.publish(REDIS_CHANNEL_OUT, json.dumps(output))
-                
-                # Unsubscribe and exit after processing one message
-                await pubsub.unsubscribe(REDIS_CHANNEL_IN)
-                break
-        
-    except Exception as e:
-        print(f"An error occurred: {str(e)}")
-    finally:
-        # Clean up Redis connections
-        await redis.close()
+            except Exception as e:
+                output = {
+                    "type": "failed",
+                    "workflowInstanceId": WORKFLOW_INSTANCE_ID,
+                    "workflowExtensionId": WORKFLOW_EXTENSION_ID,
+                    "error": str(e)
+                }
+            
+            await redis.publish(REDIS_CHANNEL_OUT, json.dumps(output))
+            await redis.close()
+            break
+
+    await pubsub.unsubscribe(REDIS_CHANNEL_IN)
+    await redis.close()
 
 if __name__ == "__main__":
     asyncio.run(main())
