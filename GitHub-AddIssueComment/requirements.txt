@@ -1,0 +1,2 @@
+aiohttp==3.8.5
+aioredis==2.0.1
