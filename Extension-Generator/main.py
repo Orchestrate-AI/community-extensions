@@ -1,7 +1,8 @@
 import os
 import sys
 import json
-import redis
+import asyncio
+from redis.asyncio import Redis
 from crewai import Agent, Task, Crew, Process, LLM
 from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
@@ -40,9 +41,13 @@ missing_env_vars = [var for var in required_env_vars if not os.getenv(var)]
 if missing_env_vars:
     raise ValueError(f"Missing required environment variables: {', '.join(missing_env_vars)}")
 
-# Initialize Redis clients
-publisher = redis.Redis(host=REDIS_HOST_URL, username=REDIS_USERNAME, password=REDIS_PASSWORD)
-subscriber = redis.Redis(host=REDIS_HOST_URL, username=REDIS_USERNAME, password=REDIS_PASSWORD)
+# Initialize Redis client
+async def get_redis_client():
+    return Redis.from_url(
+        REDIS_HOST_URL,
+        username=REDIS_USERNAME,
+        password=REDIS_PASSWORD
+    )
 
 def clone_repo_and_set_guideline():
     # Clone the community-extensions repository
@@ -306,7 +311,7 @@ def create_branch_and_commit(extension_name, files_to_create, github_app_id, git
         print(f"Unexpected error: {e}")
         raise
 
-def process_message(message, guideline):
+async def process_message(message, guideline):
     try:
         data = json.loads(message)
         extension_spec = data['inputs']['extension_spec']
@@ -367,21 +372,24 @@ def run_extension(input_data):
             'message': str(e)
         }
 
-def main():
+async def main():
     try:
+        redis = await get_redis_client()
+
         # Publish ready message
-        publisher.publish(REDIS_CHANNEL_READY, '')
+        await redis.publish(REDIS_CHANNEL_READY, '')
         
-        # Clone repo and set guideline after sending ready message
-        guideline = clone_repo_and_set_guideline()
+        
         
         # Subscribe to input channel
-        pubsub = subscriber.pubsub()
-        pubsub.subscribe(REDIS_CHANNEL_IN)
+        pubsub = redis.pubsub()
+        await pubsub.subscribe(REDIS_CHANNEL_IN)
         
-        for message in pubsub.listen():
+        async for message in pubsub.listen():
             if message['type'] == 'message':
-                result = process_message(message['data'], guideline)
+                # Clone repo and set guideline after sending ready message
+                guideline = clone_repo_and_set_guideline()
+                result = await process_message(message['data'], guideline)
                 
                 output = {
                     'type': 'completed' if result['status'] == 'success' else 'failed',
@@ -394,18 +402,17 @@ def main():
                 if result['status'] == 'success':
                     output['output']['comment'] = result['result']['comment']
                 
-                publisher.publish(REDIS_CHANNEL_OUT, json.dumps(output))
+                await redis.publish(REDIS_CHANNEL_OUT, json.dumps(output))
                 
                 # Unsubscribe and exit after processing one message
-                pubsub.unsubscribe(REDIS_CHANNEL_IN)
+                await pubsub.unsubscribe(REDIS_CHANNEL_IN)
                 break
         
     except Exception as e:
         print(f"An error occurred: {str(e)}")
     finally:
         # Clean up Redis connections
-        publisher.close()
-        subscriber.close()
+        await redis.close()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
