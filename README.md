@@ -75,6 +75,7 @@ When creating or modifying an extension, please adhere to these guidelines:
    - Build and run instructions
    - Usage examples
    - Any configuration options
+   - The extension YAML definition (see example below)
 3. Implement proper error handling and logging.
 4. Ensure your extension is stateless or uses external storage for state.
 5. Always return a JSON-serializable object from your message processing function.
@@ -93,6 +94,37 @@ When creating or modifying an extension, please adhere to these guidelines:
    These variables are set when the extension's container is created and remain constant throughout its lifecycle. They cannot be modified during runtime.
 10. Any additional configuration or sensitive information (like API tokens) should be passed as part of the input message received on REDIS_CHANNEL_IN, not as environment variables.
 11. Strictly follow the communication flow outlined in the extension-communication.md file. This flow is crucial for proper interaction with the workflow engine and Redis.
+
+### Example Extension YAML Definition
+
+Include a YAML configuration in your README.md that defines your extension. Here's an example:
+
+```yaml
+name: Your Extension Name
+description: A brief description of what your extension does
+extensionType: container
+visibility: private
+configuration:
+  dockerImage: ghcr.io/orchestrate-ai/your-extension-name
+  dockerTag: latest
+  cpuRequest: "0.1"
+  memoryRequest: "128Mi"
+  inputs:
+    - id: input-1
+      name: Input 1 Name
+      description: Description of input 1
+      key: input_1_key
+      type: string
+      required: true
+  outputs:
+    - id: output-1
+      name: Output 1 Name
+      description: Description of output 1
+      key: output_1_key
+      type: string
+```
+
+Adjust the YAML configuration to match your extension's specific inputs, outputs, and resource requirements.
 
 ## Testing
 
