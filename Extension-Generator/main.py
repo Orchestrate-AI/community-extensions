@@ -386,7 +386,7 @@ async def main():
                     "type": "completed",
                     "workflowInstanceId": WORKFLOW_INSTANCE_ID,
                     "workflowExtensionId": WORKFLOW_EXTENSION_ID,
-                    "output": result
+                    "output": result['result']  # Directly use the result object
                 }
             except Exception as e:
                 output = {
