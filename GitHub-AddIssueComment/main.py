@@ -3,7 +3,7 @@ import json
 import redis
 import requests
 from github import Github
-from github import GithubIntegration
+from github import Auth, GithubIntegration
 import logging
 
 # Configure logging
@@ -18,10 +18,15 @@ REDIS_CHANNEL_OUT = os.environ['REDIS_CHANNEL_OUT']
 REDIS_CHANNEL_READY = os.environ['REDIS_CHANNEL_READY']
 
 def add_issue_comment(repo_name, issue_number, comment_body, github_app_id, github_private_key, github_installation_id):
-    integration = GithubIntegration(github_app_id, github_private_key)
-    github_connection = integration.get_github_for_installation(github_installation_id)
-    
     try:
+        # Authenticate as GitHub App
+        auth = Auth.AppAuth(github_app_id, github_private_key)
+        gi = GithubIntegration(auth=auth)
+        
+        # Get an authenticated Github instance for this installation
+        access_token = gi.get_access_token(github_installation_id).token
+        github_connection = Github(access_token)
+        
         repo = github_connection.get_repo(repo_name)
         issue = repo.get_issue(number=issue_number)
         comment = issue.create_comment(comment_body)
