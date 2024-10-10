@@ -1,0 +1,13 @@
+{
+  "name": "shopify-get-product-inventory-levels",
+  "version": "1.0.0",
+  "description": "Shopify extension to get product inventory levels",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "redis": "^4.6.7",
+    "axios": "^1.4.0"
+  }
+}
