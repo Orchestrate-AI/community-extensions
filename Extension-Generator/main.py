@@ -220,7 +220,15 @@ def create_extension(extension_spec, github_app_id, github_private_key, api_keys
     for file_name in files_to_create.keys():
         print(f"- {file_name}")
 
-    return f"Extension '{extension_name}' created. New branch: '{new_branch}'. Pull request created: {pr_url}"
+    # Create the comment
+    comment = f"Created new extension '{extension_name}'. Pull request: {pr_url}"
+
+    return {
+        "message": f"Extension '{extension_name}' created. New branch: '{new_branch}'. Pull request created: {pr_url}",
+        "new_branch": new_branch,
+        "pr_url": pr_url,
+        "comment": comment
+    }
 
 def parse_result(crew_output):
     files = {}
@@ -381,6 +389,10 @@ def main():
                     'workflowExtensionId': WORKFLOW_EXTENSION_ID,
                     'output': result
                 }
+                
+                # Add the comment to the output
+                if result['status'] == 'success':
+                    output['output']['comment'] = result['result']['comment']
                 
                 publisher.publish(REDIS_CHANNEL_OUT, json.dumps(output))
                 

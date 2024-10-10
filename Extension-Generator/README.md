@@ -11,6 +11,7 @@ The Extension Generator is an automated tool designed to create new extensions f
 - Automatic validation of generated code against community guidelines
 - Library version checking to ensure up-to-date dependencies
 - Automatic creation of a new branch and pull request in the community-extensions repository
+- Generation of a comment summarizing the extension creation and providing a link to the pull request
 
 ## Requirements
 
@@ -70,11 +71,14 @@ The extension produces output in the following format:
     "status": "success",
     "result": {
       "new_branch": "new-extension-branch-name",
-      "pr_url": "https://github.com/Orchestrate-AI/community-extensions/pull/123"
+      "pr_url": "https://github.com/Orchestrate-AI/community-extensions/pull/123",
+      "comment": "Created new extension 'ExtensionName'. Pull request: https://github.com/Orchestrate-AI/community-extensions/pull/123"
     }
   }
 }
 ```
+
+The `comment` field in the output can be used by other extensions or systems to leave a comment on a GitHub issue or for other notification purposes.
 
 ## Configuration
 
