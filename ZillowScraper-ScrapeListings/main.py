@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 
 def connect_to_redis():
 
-    return Redis.from_url(
+    return redis.Redis.from_url(
         os.environ['REDIS_HOST_URL'],
         username=os.environ['REDIS_USERNAME'],
         password=os.environ['REDIS_PASSWORD'],
