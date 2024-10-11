@@ -1,15 +1,28 @@
 import os
 import json
-import redis
+import asyncio
+from redis.asyncio import Redis
+from dotenv import load_dotenv
 import requests
 from bs4 import BeautifulSoup
 
+load_dotenv()
+
+WORKFLOW_INSTANCE_ID = os.getenv('WORKFLOW_INSTANCE_ID')
+WORKFLOW_EXTENSION_ID = os.getenv('WORKFLOW_EXTENSION_ID')
+REDIS_HOST_URL = os.getenv('REDIS_HOST_URL')
+REDIS_USERNAME = os.getenv('REDIS_USERNAME')
+REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
+REDIS_CHANNEL_IN = os.getenv('REDIS_CHANNEL_IN')
+REDIS_CHANNEL_OUT = os.getenv('REDIS_CHANNEL_OUT')
+REDIS_CHANNEL_READY = os.getenv('REDIS_CHANNEL_READY')
+
 def connect_to_redis():
 
-    return redis.Redis.from_url(
-        os.environ['REDIS_HOST_URL'],
-        username=os.environ['REDIS_USERNAME'],
-        password=os.environ['REDIS_PASSWORD'],
+    return Redis.from_url(
+        REDIS_HOST_URL,
+        username=REDIS_USERNAME,
+        password=REDIS_PASSWORD,
         decode_responses=True
     )
 
@@ -53,7 +66,7 @@ def scrape_zillow(zipcode, min_price, max_price):
 
     return listings
 
-def process_message(message):
+async def process_message(message):
     data = json.loads(message)
     inputs = data['inputs']
     zipcode = inputs['zipcode']
@@ -67,29 +80,42 @@ def process_message(message):
         'count': len(listings)
     }
 
-def main():
-    redis_client = connect_to_redis()
-    pubsub = redis_client.pubsub()
+async def main():
+    redis = Redis.from_url(
+        REDIS_HOST_URL,
+        username=REDIS_USERNAME,
+        password=REDIS_PASSWORD
+    )
 
-    pubsub.subscribe(os.environ['REDIS_CHANNEL_IN'])
-    redis_client.publish(os.environ['REDIS_CHANNEL_READY'], '')
+    await redis.publish(REDIS_CHANNEL_READY, '')
 
-    for message in pubsub.listen():
+    pubsub = redis.pubsub()
+    await pubsub.subscribe(REDIS_CHANNEL_IN)
+
+    async for message in pubsub.listen():
         if message['type'] == 'message':
-            result = process_message(message['data'])
-
-            output = {
-                'type': 'completed',
-                'workflowInstanceId': os.environ['WORKFLOW_INSTANCE_ID'],
-                'workflowExtensionId': os.environ['WORKFLOW_EXTENSION_ID'],
-                'output': result
-            }
-            redis_client.publish(os.environ['REDIS_CHANNEL_OUT'], json.dumps(output))
-
-            pubsub.unsubscribe(os.environ['REDIS_CHANNEL_IN'])
+            try:
+                result = await process_message(message['data'])
+                output = {
+                    "type": "completed",
+                    "workflowInstanceId": WORKFLOW_INSTANCE_ID,
+                    "workflowExtensionId": WORKFLOW_EXTENSION_ID,
+                    "output": result
+                }
+            except Exception as e:
+                output = {
+                    "type": "failed",
+                    "workflowInstanceId": WORKFLOW_INSTANCE_ID,
+                    "workflowExtensionId": WORKFLOW_EXTENSION_ID,
+                    "error": str(e)
+                }
+            
+            await redis.publish(REDIS_CHANNEL_OUT, json.dumps(output))
+            await redis.close()
             break
 
-    redis_client.close()
+    await pubsub.unsubscribe(REDIS_CHANNEL_IN)
+    await redis.close()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
