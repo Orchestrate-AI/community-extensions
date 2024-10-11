@@ -5,8 +5,9 @@ import requests
 from bs4 import BeautifulSoup
 
 def connect_to_redis():
-    return redis.Redis(
-        host=os.environ['REDIS_HOST_URL'],
+
+    return Redis.from_url(
+        os.environ['REDIS_HOST_URL'],
         username=os.environ['REDIS_USERNAME'],
         password=os.environ['REDIS_PASSWORD'],
         decode_responses=True
