@@ -2,3 +2,5 @@ requests
 beautifulsoup4
 redis
 python-dotenv
+selenium
+webdriver-manager

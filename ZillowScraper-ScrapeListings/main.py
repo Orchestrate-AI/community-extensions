@@ -8,6 +8,11 @@ from bs4 import BeautifulSoup
 import time
 import random
 from requests.exceptions import RequestException
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 load_dotenv()
 
@@ -93,6 +98,51 @@ def scrape_zillow(zipcode, min_price, max_price):
                 raise
 
     return [], "Max retries reached. Unable to fetch data."
+
+def scrape_zillow_with_selenium(zipcode, min_price, max_price):
+    options = Options()
+    options.add_argument("--headless")  # Run in headless mode
+    options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+
+    driver = webdriver.Chrome(options=options)
+    
+    url = f"https://www.zillow.com/homes/{zipcode}_rb/"
+    driver.get(url)
+
+    # Wait for the page to load
+    time.sleep(random.uniform(3, 5))
+
+    # Implement price filtering (this may need to be adjusted based on Zillow's current UI)
+    # This is a placeholder and may need to be updated
+    price_filter = driver.find_element(By.ID, "price-exposed-max")
+    price_filter.clear()
+    price_filter.send_keys(str(max_price))
+    
+    # Wait for results to update
+    time.sleep(random.uniform(2, 4))
+
+    # Extract listing information
+    listings = []
+    listing_elements = driver.find_elements(By.CSS_SELECTOR, ".list-card")
+    
+    for element in listing_elements:
+        try:
+            address = element.find_element(By.CSS_SELECTOR, ".list-card-addr").text
+            price = element.find_element(By.CSS_SELECTOR, ".list-card-price").text
+            details = element.find_element(By.CSS_SELECTOR, ".list-card-details").text
+            link = element.get_attribute("href")
+            
+            listings.append({
+                "address": address,
+                "price": price,
+                "details": details,
+                "link": link
+            })
+        except:
+            continue
+
+    driver.quit()
+    return listings
 
 async def process_message(message):
     data = json.loads(message)
