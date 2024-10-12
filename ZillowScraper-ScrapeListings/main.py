@@ -34,8 +34,7 @@ def connect_to_redis():
         decode_responses=True
     )
 
-def scrape_zillow(zipcode, min_price, max_price):
-    url = f"https://www.zillow.com/homes/{zipcode}_rb/"
+def scrape_zillow(url):
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -44,22 +43,6 @@ def scrape_zillow(zipcode, min_price, max_price):
         'DNT': '1',
         'Connection': 'keep-alive',
         'Upgrade-Insecure-Requests': '1',
-    }
-    params = {
-        'searchQueryState': json.dumps({
-            "pagination": {},
-            "usersSearchTerm": zipcode,
-            "mapBounds": {"west": -180, "east": 180, "south": -90, "north": 90},
-            "regionSelection": [{"regionId": 0, "regionType": 7}],
-            "isMapVisible": False,
-            "filterState": {
-                "price": {"min": min_price, "max": max_price},
-                "mp": {"min": min_price, "max": max_price},
-                "sort": {"value": "globalrelevanceex"},
-                "ah": {"value": True}
-            },
-            "isListVisible": True
-        })
     }
 
     session = requests.Session()
@@ -70,26 +53,48 @@ def scrape_zillow(zipcode, min_price, max_price):
             # Add a random delay between requests
             time.sleep(random.uniform(1, 3))
             
-            response = session.get(url, headers=headers, params=params)
+            response = session.get(url, headers=headers)
             response.raise_for_status()  # Raise an exception for bad status codes
             
             debug_html = response.text
             
             soup = BeautifulSoup(response.content, 'html.parser')
+            
+            # Update the selector to target the correct container
+            listings_container = soup.find('ul', {'class': 'List-c11n-8-84-3__sc-1smrmqp-0'})
+            
+            if not listings_container:
+                print("Listings container not found. The page structure might have changed.")
+                return [], debug_html
 
             listings = []
-            for item in soup.select('.list-card'):
-                try:
-                    listing = {
-                        'address': item.select_one('.list-card-addr').text,
-                        'price': item.select_one('.list-card-price').text,
-                        'details': item.select_one('.list-card-details').text,
-                        'link': item['href'] if item.has_attr('href') else ''
-                    }
-                    listings.append(listing)
-                except AttributeError:
-                    continue
-
+            
+            # Update the selector to target individual listing items
+            for item in listings_container.find_all('li', {'class': 'ListItem-c11n-8-84-3__sc-10e22w8-0'}):
+                # Extract address
+                address_elem = item.find('address')
+                address = address_elem.text.strip() if address_elem else "Address not found"
+                
+                # Extract price
+                price_elem = item.find('span', {'data-test': 'property-card-price'})
+                price = price_elem.text.strip() if price_elem else "Price not found"
+                
+                # Extract bedrooms and bathrooms
+                details_elem = item.find('ul', {'class': 'StyledPropertyCardHomeDetailsList-c11n-8-84-3__sc-1xvdaej-0'})
+                beds = baths = "N/A"
+                if details_elem:
+                    beds_elem = details_elem.find('li', {'data-test': 'property-card-bed'})
+                    baths_elem = details_elem.find('li', {'data-test': 'property-card-bath'})
+                    beds = beds_elem.text.strip() if beds_elem else "N/A"
+                    baths = baths_elem.text.strip() if baths_elem else "N/A"
+                
+                listings.append({
+                    'address': address,
+                    'price': price,
+                    'beds': beds,
+                    'baths': baths
+                })
+            
             return listings, debug_html
 
         except RequestException as e:
@@ -101,36 +106,48 @@ def scrape_zillow(zipcode, min_price, max_price):
 
 def scrape_zillow_with_selenium(zipcode, min_price, max_price):
     options = Options()
-    options.add_argument("--headless")  # Run in headless mode
+    options.add_argument("--headless")
     options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
 
     driver = webdriver.Chrome(options=options)
     
-    url = f"https://www.zillow.com/homes/{zipcode}_rb/"
+    search_query_state = {
+        "pagination": {},
+        "isMapVisible": True,
+        "mapBounds": {
+            "north": 33.79679084216046,
+            "south": 33.74449244976123,
+            "east": -84.2613748383789,
+            "west": -84.32660616162109
+        },
+        "filterState": {
+            "sort": {"value": "globalrelevanceex"},
+            "price": {"min": min_price, "max": max_price},
+            "mp": {"min": min_price // 203, "max": max_price // 203}  # Approximate monthly payment
+        },
+        "isListVisible": True,
+        "mapZoom": 14,
+        "regionSelection": [{"regionId": 70815, "regionType": 7}]
+    }
+    
+    url = f"https://www.zillow.com/{zipcode}/?searchQueryState={json.dumps(search_query_state)}"
     driver.get(url)
 
     # Wait for the page to load
     time.sleep(random.uniform(3, 5))
 
-    # Implement price filtering (this may need to be adjusted based on Zillow's current UI)
-    # This is a placeholder and may need to be updated
-    price_filter = driver.find_element(By.ID, "price-exposed-max")
-    price_filter.clear()
-    price_filter.send_keys(str(max_price))
-    
-    # Wait for results to update
-    time.sleep(random.uniform(2, 4))
-
     # Extract listing information
     listings = []
-    listing_elements = driver.find_elements(By.CSS_SELECTOR, ".list-card")
+    listing_elements = WebDriverWait(driver, 10).until(
+        EC.presence_of_all_elements_located((By.CSS_SELECTOR, "[data-test='property-card-container']"))
+    )
     
     for element in listing_elements:
         try:
-            address = element.find_element(By.CSS_SELECTOR, ".list-card-addr").text
-            price = element.find_element(By.CSS_SELECTOR, ".list-card-price").text
-            details = element.find_element(By.CSS_SELECTOR, ".list-card-details").text
-            link = element.get_attribute("href")
+            address = element.find_element(By.CSS_SELECTOR, "[data-test='property-card-addr']").text
+            price = element.find_element(By.CSS_SELECTOR, "[data-test='property-card-price']").text
+            details = element.find_element(By.CSS_SELECTOR, "[data-test='property-card-details']").text
+            link = element.find_element(By.CSS_SELECTOR, "a").get_attribute("href")
             
             listings.append({
                 "address": address,
@@ -138,7 +155,8 @@ def scrape_zillow_with_selenium(zipcode, min_price, max_price):
                 "details": details,
                 "link": link
             })
-        except:
+        except Exception as e:
+            print(f"Error extracting listing: {str(e)}")
             continue
 
     driver.quit()
@@ -151,7 +169,7 @@ async def process_message(message):
     min_price = inputs['min_price']
     max_price = inputs['max_price']
 
-    listings, debug_html = scrape_zillow(zipcode, min_price, max_price)
+    listings, debug_html = scrape_zillow(url=f"https://www.zillow.com/homes/{zipcode}_rb/")
 
     return {
         'listings': listings,
