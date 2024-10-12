@@ -49,6 +49,10 @@ def scrape_zillow(zipcode, min_price, max_price):
     }
 
     response = requests.get(url, headers=headers, params=params)
+    
+    # Capture the HTML content for debugging
+    debug_html = response.text
+    
     soup = BeautifulSoup(response.content, 'html.parser')
 
     listings = []
@@ -64,7 +68,7 @@ def scrape_zillow(zipcode, min_price, max_price):
         except AttributeError:
             continue
 
-    return listings
+    return listings, debug_html
 
 async def process_message(message):
     data = json.loads(message)
@@ -73,11 +77,12 @@ async def process_message(message):
     min_price = inputs['min_price']
     max_price = inputs['max_price']
 
-    listings = scrape_zillow(zipcode, min_price, max_price)
+    listings, debug_html = scrape_zillow(zipcode, min_price, max_price)
 
     return {
         'listings': listings,
-        'count': len(listings)
+        'count': len(listings),
+        'debug_html': debug_html
     }
 
 async def main():
