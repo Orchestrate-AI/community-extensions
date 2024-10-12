@@ -5,6 +5,9 @@ from redis.asyncio import Redis
 from dotenv import load_dotenv
 import requests
 from bs4 import BeautifulSoup
+import time
+import random
+from requests.exceptions import RequestException
 
 load_dotenv()
 
@@ -29,7 +32,13 @@ def connect_to_redis():
 def scrape_zillow(zipcode, min_price, max_price):
     url = f"https://www.zillow.com/homes/{zipcode}_rb/"
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Referer': 'https://www.zillow.com/',
+        'DNT': '1',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
     }
     params = {
         'searchQueryState': json.dumps({
@@ -48,27 +57,42 @@ def scrape_zillow(zipcode, min_price, max_price):
         })
     }
 
-    response = requests.get(url, headers=headers, params=params)
+    session = requests.Session()
     
-    # Capture the HTML content for debugging
-    debug_html = response.text
-    
-    soup = BeautifulSoup(response.content, 'html.parser')
-
-    listings = []
-    for item in soup.select('.list-card'):
+    max_retries = 3
+    for attempt in range(max_retries):
         try:
-            listing = {
-                'address': item.select_one('.list-card-addr').text,
-                'price': item.select_one('.list-card-price').text,
-                'details': item.select_one('.list-card-details').text,
-                'link': item['href'] if item.has_attr('href') else ''
-            }
-            listings.append(listing)
-        except AttributeError:
-            continue
+            # Add a random delay between requests
+            time.sleep(random.uniform(1, 3))
+            
+            response = session.get(url, headers=headers, params=params)
+            response.raise_for_status()  # Raise an exception for bad status codes
+            
+            debug_html = response.text
+            
+            soup = BeautifulSoup(response.content, 'html.parser')
 
-    return listings, debug_html
+            listings = []
+            for item in soup.select('.list-card'):
+                try:
+                    listing = {
+                        'address': item.select_one('.list-card-addr').text,
+                        'price': item.select_one('.list-card-price').text,
+                        'details': item.select_one('.list-card-details').text,
+                        'link': item['href'] if item.has_attr('href') else ''
+                    }
+                    listings.append(listing)
+                except AttributeError:
+                    continue
+
+            return listings, debug_html
+
+        except RequestException as e:
+            print(f"Request failed (attempt {attempt + 1}/{max_retries}): {str(e)}")
+            if attempt == max_retries - 1:
+                raise
+
+    return [], "Max retries reached. Unable to fetch data."
 
 async def process_message(message):
     data = json.loads(message)
