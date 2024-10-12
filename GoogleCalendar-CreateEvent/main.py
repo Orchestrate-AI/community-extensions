@@ -45,15 +45,16 @@ def process_message(message):
             },
         }
         
-        # Create credentials object
-        credentials = Credentials.from_authorized_user_info(json.loads(inputs['google_credentials']))
+        # Get authentication details
+        auth_token = inputs['auth_token']
+        is_oauth = inputs.get('is_oauth', False)
         
-        # Refresh token if expired
-        if credentials.expired and credentials.refresh_token:
-            credentials.refresh(Request())
+        # Handle different formats for is_oauth
+        if isinstance(is_oauth, str):
+            is_oauth = is_oauth.lower() == 'true'
         
         # Create calendar event
-        event_id = create_calendar_event(credentials, event_details)
+        event_id = create_calendar_event(auth_token, event_details, is_oauth)
         
         return {'status': 'success', 'event_id': event_id}
     except Exception as e:
