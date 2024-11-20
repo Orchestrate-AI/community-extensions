@@ -1,0 +1,26 @@
+{
+  "name": "github-issue-comment-extension",
+  "version": "1.0.0",
+  "description": "An extension to create comments on GitHub issues",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "jest",
+    "lint": "eslint ."
+  },
+  "keywords": ["github", "issue", "comment", "extension"],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "@octokit/rest": "^19.0.7",
+    "redis": "^4.6.6",
+    "jsonschema": "^1.4.1"
+  },
+  "devDependencies": {
+    "jest": "^29.5.0",
+    "eslint": "^8.40.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
