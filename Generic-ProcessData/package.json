@@ -1,0 +1,28 @@
+{
+  "name": "generic-processdata",
+  "version": "1.0.0",
+  "description": "A generic extension for processing data in a workflow",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "jest"
+  },
+  "keywords": ["extension", "workflow", "data processing"],
+  "author": "Your Name <your.email@example.com>",
+  "license": "ISC",
+  "dependencies": {
+    "redis": "^4.0.0",
+    "winston": "^3.3.3",
+    "envalid": "^7.0.0"
+  },
+  "devDependencies": {
+    "jest": "^27.0.6"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/generic-processdata.git"
+  }
+}
